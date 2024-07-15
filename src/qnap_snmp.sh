@@ -11,6 +11,18 @@ to_lowercase(){
     echo $(echo ${1} | awk '{print tolower($1)}')
 }
 
+translate_service_status(){
+    ARG_RAW_STATUS=$1
+    case ${ARG_RAW_STATUS} in
+        0)
+            echo "stopped/disabled"
+            ;;
+        1)
+            echo "started/enabled"
+            ;;
+    esac
+}
+
 query_qnap(){
     ARG_COMMAND=$1
     case ${ARG_COMMAND} in
@@ -48,28 +60,43 @@ echo "Command: ${COMMAND}"
 case $(to_lowercase ${COMMAND}) in
     status)
         echo "checking SNMP service status..."
-        echo Status: $(query_qnap status)
+        SNMP_STATUS=$(query_qnap status)
+        echo "Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
         ;;
     disable|stop)
-        echo Current Status: $(query_qnap status)
+        SNMP_STATUS=$(query_qnap status)
+        echo "Current Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
+
         echo "disabling SNMP service..."
         query_qnap disable
-        echo Status: $(query_qnap status)
+        
+        SNMP_STATUS=$(query_qnap status)
+        echo "Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
         ;;
     enable|start)
-        echo Current Status: $(query_qnap status)
-        echo "enabling SNMP service..."
-        query_qnap enable
-        echo Status: $(query_qnap status)
-        ;;
-    restart)
-        echo Current Status: $(query_qnap status)
-        echo "disabling SNMP service..."
-        query_qnap disable
-        echo Status: $(query_qnap status)
+        SNMP_STATUS=$(query_qnap status)
+        echo "Current Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
 
         echo "enabling SNMP service..."
         query_qnap enable
-        echo Status: $(query_qnap status)
+
+        SNMP_STATUS=$(query_qnap status)
+        echo "Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
+        ;;
+    restart)
+        SNMP_STATUS=$(query_qnap status)
+        echo "Current Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
+
+        echo "disabling SNMP service..."
+        query_qnap disable
+
+        SNMP_STATUS=$(query_qnap status)
+        echo "Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
+
+        echo "enabling SNMP service..."
+        query_qnap enable
+
+        SNMP_STATUS=$(query_qnap status)
+        echo "Status: ${SNMP_STATUS} ($(translate_service_status ${SNMP_STATUS}))"
         ;;
 esac
