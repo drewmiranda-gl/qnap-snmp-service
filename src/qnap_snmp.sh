@@ -40,7 +40,7 @@ query_qnap(){
                 --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp" | grep -io \<snmp_enable\>.*\<\/snmp_enable\> | grep -io cdata\\[[[:digit:]]\\] | grep -io \\[[[:digit:]]\\] | grep -oP '0|1'
             ;;
         disable)
-            query_qnap auth
+            TOKEN=$(query_qnap auth)
             /usr/bin/curl --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp&apply=1" \
                 -v \
                 --header 'Content-Type: text/plain' \
@@ -48,7 +48,7 @@ query_qnap(){
                  > /dev/null 2>&1
             ;;
         enable)
-            query_qnap auth
+            TOKEN=$(query_qnap auth)
             /usr/bin/curl --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp&apply=1" \
                 -v \
                 --header 'Content-Type: text/plain' \
