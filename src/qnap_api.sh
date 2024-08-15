@@ -1,7 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-source ${SCRIPT_DIR}/qnap_snmp_config.sh
+source ${SCRIPT_DIR}/qnap_config.sh
 service=99
 device=remote-cli
 force_to_check_2sv=0
