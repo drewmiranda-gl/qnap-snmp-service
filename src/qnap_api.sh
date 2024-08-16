@@ -208,7 +208,7 @@ case $(to_lowercase ${COMMAND}) in
             FW_NEW_VER=$FW_CUR_VER
         fi
 
-        echo "Current Firmware Version: ${FW_CUR_VER}"
+        echo "Current: ${FW_CUR_VER}, New: ${FW_NEW_VER}"
 
         vercomp $FW_NEW_VER $FW_CUR_VER
         # 0 : A = B
