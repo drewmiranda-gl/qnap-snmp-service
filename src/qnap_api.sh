@@ -202,6 +202,9 @@ case $(to_lowercase ${COMMAND}) in
 
         FW_NEW_P=$(echo $FIRMWARECHECK | grep -oP '<newVersion>.*</newVersion>')
         FW_NEW_VER=$(echo $FW_NEW_P | sed -n 's/.*<!\[CDATA\[\([[:digit:]\.]\+\).*\]\]>.*$/\1/p')
+        if [[ -z $FW_NEW_VER ]]; then
+            FW_NEW_VER=$FW_CUR_VER
+        fi
 
         echo "Current Firmware Version: ${FW_CUR_VER}"
 
