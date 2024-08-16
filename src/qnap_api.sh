@@ -202,6 +202,8 @@ case $(to_lowercase ${COMMAND}) in
 
         FW_NEW_P=$(echo $FIRMWARECHECK | grep -oP '<newVersion>.*</newVersion>')
         FW_NEW_VER=$(echo $FW_NEW_P | sed -n 's/.*<!\[CDATA\[\([[:digit:]\.]\+\).*\]\]>.*$/\1/p')
+        # FW_NEW_VER="5.3"
+
         if [[ -z $FW_NEW_VER ]]; then
             FW_NEW_VER=$FW_CUR_VER
         fi
