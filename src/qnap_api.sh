@@ -214,7 +214,14 @@ case $(to_lowercase ${COMMAND}) in
         # 0 : A = B
         # 1 : A > B
         # 2 : B > A
-        if [ $? -eq 1 ]; then
+        if [ $? -eq 0 ]; then
+            echo "No firmware update"
+
+            JSON_PREP="message=NO Firmware update available.
+            qnap_cur_ver=${FW_CUR_VER}
+            "
+            send_gelf_payload "$JSON_PREP"
+        elif [ $? -eq 1 ]; then
             echo "New Firmware Available: ${FW_NEW_VER}"
             
             JSON_PREP="message=New Firmware Available for QNAP
@@ -222,15 +229,6 @@ case $(to_lowercase ${COMMAND}) in
             qnap_new_ver=${FW_NEW_VER}
             "
             send_gelf_payload "$JSON_PREP"
-
-        elif [ $? -eq 0 ]; then
-            echo "No firmware update"
-
-            JSON_PREP="message=NO Firmware update available.
-            qnap_cur_ver=${FW_CUR_VER}
-            "
-            send_gelf_payload "$JSON_PREP"
-
         elif [ $? -eq 2 ]; then
             echo "Existing firmware is newer than latest update. This should NEVER happen"
         fi
