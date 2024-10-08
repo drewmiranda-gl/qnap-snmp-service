@@ -111,6 +111,13 @@ send_gelf_payload(){
         --data-raw "$payload"
 }
 
+EXIT_ON_TOKEN_EMPTY() {
+    if [[ -z $1 ]]; then
+        echo "ERROR, Token Empty"
+        exit 1
+    fi
+}
+
 query_qnap(){
     ARG_COMMAND=$1
     case ${ARG_COMMAND} in
@@ -122,6 +129,8 @@ query_qnap(){
             ;;
         status)
             TOKEN=$(query_qnap auth)
+            EXIT_ON_TOKEN_EMPTY $TOKEN
+            
             /usr/bin/curl \
                 --silent \
                 -XPOST \
