@@ -154,6 +154,15 @@ query_qnap(){
             ;;
     esac
 }
+# verify HTTPS trust
+/usr/bin/curl --silent $CMD_ARG_TO_VERIFY_CURL_URL ${base_qnap_host} > /dev/null 2>&1
+curl_exit_code=$?
+if (( $curl_exit_code > 0 )); then
+    echo "Failed to connect to URL: ${base_qnap_host}"
+    echo "NON ZERO EXIT CODE: $curl_exit_code"
+    /usr/bin/curl -v $CMD_ARG_TO_VERIFY_CURL_URL ${base_qnap_host}
+    exit
+fi
 
 COMMAND=$1
 echo "Command: ${COMMAND}"
