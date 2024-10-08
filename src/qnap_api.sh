@@ -123,6 +123,7 @@ query_qnap(){
     case ${ARG_COMMAND} in
         auth)
             /usr/bin/curl --silent \
+                $CMD_ARG_TO_VERIFY_CURL_URL \
                 -XPOST \
                 --location "${base_qnap_host}/cgi-bin/authLogin.cgi?user=${username}&plain_pwd=${pwd_in_plain_text}&remme=${remme}&service=${service}&device=${device}&force_to_check_2sv=${force_to_check_2sv}" \
                 | grep -oP '\<authSid\>.*?\<\/authSid\>' | grep -oP 'CDATA\[(.*?)\]' | grep -oP '\[.*\]' | grep -oP '[^\[\]]+'
@@ -133,6 +134,7 @@ query_qnap(){
             
             /usr/bin/curl \
                 --silent \
+                $CMD_ARG_TO_VERIFY_CURL_URL \
                 -XPOST \
                 --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp" | grep -io \<snmp_enable\>.*\<\/snmp_enable\> | grep -io cdata\\[[[:digit:]]\\] | grep -io \\[[[:digit:]]\\] | grep -oP '0|1'
             ;;
@@ -140,6 +142,7 @@ query_qnap(){
             TOKEN=$(query_qnap auth)
             /usr/bin/curl --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp&apply=1" \
                 -v \
+                $CMD_ARG_TO_VERIFY_CURL_URL \
                 --header 'Content-Type: text/plain' \
                 --data 'event_count=123&snmp_auth_protocol=0&select_snmp_version=v1&chkValue=0' \
                  > /dev/null 2>&1
@@ -148,12 +151,28 @@ query_qnap(){
             TOKEN=$(query_qnap auth)
             /usr/bin/curl --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp&apply=1" \
                 -v \
+                $CMD_ARG_TO_VERIFY_CURL_URL \
                 --header 'Content-Type: text/plain' \
                 --data 'chk_snmp=on&snmp_port=161&snmp_community=public&event_count=123&snmp_auth_protocol=0&select_snmp_version=v1&chkValue=0' \
                  > /dev/null 2>&1
             ;;
     esac
 }
+
+PARSE_VERIFY_CURL_URL() {
+    Y_OR_N=$(to_lowercase ${1})
+    case ${Y_OR_N} in
+        y)
+            echo ""
+            ;;
+        n)
+            echo "-k"
+            ;;
+    esac
+}
+
+CMD_ARG_TO_VERIFY_CURL_URL=$(PARSE_VERIFY_CURL_URL $VERIFY_CERT)
+
 # verify HTTPS trust
 /usr/bin/curl --silent $CMD_ARG_TO_VERIFY_CURL_URL ${base_qnap_host} > /dev/null 2>&1
 curl_exit_code=$?
