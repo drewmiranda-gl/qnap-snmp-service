@@ -187,6 +187,11 @@ PARSE_VERIFY_CURL_URL() {
     esac
 }
 
+escape_quotes() {
+  local input="$1"
+  echo "$input" | sed 's/"/\\"/g'
+}
+
 CMD_ARG_TO_VERIFY_CURL_URL=$(PARSE_VERIFY_CURL_URL $VERIFY_CERT)
 
 # verify HTTPS trust
@@ -286,4 +291,22 @@ case $(to_lowercase ${COMMAND}) in
             echo "Existing firmware is newer than latest update. This should NEVER happen"
         fi
         ;;
+    cs_status)
+        TOKEN=$(query_qnap auth)
+        CS_STATUS=$(/usr/bin/curl --silent --request GET --location "${base_qnap_host}/container-station/api/v3/overview" -H "authorization: Bearer ${TOKEN}")
+        echo "Container Station Status: ${CS_STATUS}"
+        EXIT_ON_WHICH_EMPTY "jq"
+        JQLINES=$(echo "${CS_STATUS}" | jq .data.container | jq -c 'map(.)[]')
+        # echo $JQLINES
+        while IFS= read -r line ; do
+            line_trimmed=$(echo "$line")
+            line_escaped=$(escape_quotes $line_trimmed)
+            # echo ""
+            # echo $line_trimmed
+            JSON_PREP="message=QNAP Container Station Container Status
+            qnap_cs_status=${line_escaped}
+            "
+            send_gelf_payload "$JSON_PREP"
+
+        done <<< "$JQLINES"
 esac
