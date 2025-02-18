@@ -111,10 +111,26 @@ send_gelf_payload(){
         --data-raw "$payload"
 }
 
+ERROR_CONTROL() {
+    if (( $1 > 0 )); then
+        echo "NON ZERO EXIT CODE: ${1}"
+        # exit
+    fi
+}
+
 EXIT_ON_TOKEN_EMPTY() {
     if [[ -z $1 ]]; then
         echo "ERROR, Token Empty"
         exit 1
+    fi
+}
+
+EXIT_ON_WHICH_EMPTY() {
+    (which $1)
+    exit_code=$?
+    if (( $exit_code > 0 )); then
+        echo "ERROR: cannot find ${1}"
+        exit
     fi
 }
 
