@@ -1,2 +1,3 @@
 .vscode/sftp.json
 qnap/*
+qnap_config.sh
