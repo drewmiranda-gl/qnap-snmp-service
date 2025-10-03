@@ -8,6 +8,16 @@ force_to_check_2sv=0
 remme=1
 hostname=$(hostname)
 
+SID_CACHE_FILENAME=".authcache"
+SID_CACHE_ABS_PATH="${SCRIPT_DIR}/${SID_CACHE_FILENAME}"
+SID_CACHE_MAX_FILE_AGE_SEC=300
+
+RED="\e[31m"
+GREEN="\e[32m"
+BLUE="\e[34m"
+YELLOW="\e[33m"
+ENDCOLOR="\e[0m"
+
 to_lowercase(){
     echo $(echo ${1} | awk '{print tolower($1)}')
 }
@@ -134,6 +144,23 @@ EXIT_ON_WHICH_EMPTY() {
     fi
 }
 
+GET_UNIX_EPOCH_OF_FILE() {
+    absfile=$1
+    isodate=$(ls -al --time-style=full-iso ${absfile} | sed -E 's/^.* ([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]+).[0-9]+ .*$/\1/')
+    unixdate=$(date -d "$isodate" +"%s")
+    echo $unixdate
+}
+
+GET_UNIX_EPOCH_NOW() {
+    echo $(date +"%s")
+}
+
+GET_FILE_DIFF_SEC() {
+    d1=$1
+    d2=$2
+    echo $(( d1 - d2 ))
+}
+
 query_qnap(){
     ARG_COMMAND=$1
     case ${ARG_COMMAND} in
@@ -144,12 +171,61 @@ query_qnap(){
                 --location "${base_qnap_host}/cgi-bin/authLogin.cgi?user=${username}&plain_pwd=${pwd_in_plain_text}&remme=${remme}&service=${service}&device=${device}&force_to_check_2sv=${force_to_check_2sv}" \
                 | grep -oP '\<authSid\>.*?\<\/authSid\>' | grep -oP 'CDATA\[(.*?)\]' | grep -oP '\[.*\]' | grep -oP '[^\[\]]+'
             ;;
+        auth_w_cache)
+            continue=1
+
+            if [ -f "${SID_CACHE_ABS_PATH}" ]; then
+                unix_now=$(GET_UNIX_EPOCH_NOW)
+                file_epoch=$(GET_UNIX_EPOCH_OF_FILE ${SID_CACHE_ABS_PATH})
+                diff=$(GET_FILE_DIFF_SEC ${unix_now} ${file_epoch})
+                if (( $diff > $SID_CACHE_MAX_FILE_AGE_SEC )); then
+                    # removing outdated cache file
+                    rm -f "${SID_CACHE_ABS_PATH}" >/dev/null 2>&1
+                else
+                    # test?
+                    TOKEN=$(cat "${SID_CACHE_ABS_PATH}")
+                    AUTH_PASSED=$(query_qnap verify_auth "${TOKEN}")
+
+                    if [[ "$authpassed" == "1" ]]; then
+                        # verified token is good, we can return it
+                        echo "${TOKEN}"
+                        continue=0
+                    fi
+                fi
+            fi
+
+            if [ $continue -gt 0 ]; then
+                TOKEN=$(query_qnap auth)
+
+                # if file missing, create and set permission
+                if [ ! -f "${SID_CACHE_ABS_PATH}" ]; then
+                    touch "${SID_CACHE_ABS_PATH}" >/dev/null 2>&1
+                    chmod 600 "${SID_CACHE_ABS_PATH}" >/dev/null 2>&1
+                fi
+
+                if [ -f "${SID_CACHE_ABS_PATH}" ]; then
+                    echo ${TOKEN} > "${SID_CACHE_ABS_PATH}"
+                fi
+
+                echo ${TOKEN}
+            fi
+            ;;
+        verify_auth)
+            USE_FOR_TOKEN=$2
+            authpassed=0
+            authpassed=$(/usr/bin/curl --fail --silent $CMD_ARG_TO_VERIFY_CURL_URL --location "${base_qnap_host}/cgi-bin/sysinfoReq.cgi?sid=${USE_FOR_TOKEN}"| grep -oPi "<authpassed>.*?</authPassed>" | sed -E 's#<authPassed><!\[CDATA\[(.*)\]\]></authPassed>#\1#')
+            if [[ "$authpassed" != "1" ]]; then
+                authpassed=0
+            fi
+            echo $authpassed
+            ;;
         status)
-            TOKEN=$(query_qnap auth)
+            TOKEN=$(query_qnap auth_w_cache)
             EXIT_ON_TOKEN_EMPTY $TOKEN
             
             /usr/bin/curl \
                 --silent \
+                --fail \
                 $CMD_ARG_TO_VERIFY_CURL_URL \
                 -XPOST \
                 --location "${base_qnap_host}/cgi-bin/net/networkRequest.cgi?sid=${TOKEN}&subfunc=snmp" | grep -io \<snmp_enable\>.*\<\/snmp_enable\> | grep -io cdata\\[[[:digit:]]\\] | grep -io \\[[[:digit:]]\\] | grep -oP '0|1'
