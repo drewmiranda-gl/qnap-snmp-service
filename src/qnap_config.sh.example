@@ -1,4 +1,6 @@
 #!/bin/bash
+# RENAME to qnap_config.sh
+
 # base hostname only , no trailing slashes
 # example: https://hostname.domain.tld
 base_qnap_host=
