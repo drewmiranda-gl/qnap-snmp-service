@@ -309,4 +309,5 @@ case $(to_lowercase ${COMMAND}) in
             send_gelf_payload "$JSON_PREP"
 
         done <<< "$JQLINES"
+        ;;
 esac
